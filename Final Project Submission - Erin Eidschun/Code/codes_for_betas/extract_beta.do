@@ -2,9 +2,8 @@ clear all
 set more off
 version 14.0
 
-*1000 files called dgp 1 - 1000 so import. () is step size
 forvalues i = 1(1)1{ 
-import delimited "Desktop/StructEst_W20/Projects/Data/prod_data_USD/wide_df_new.csv", colrange(1:76) clear /*load simulated data for estimation*/
+import delimited "Desktop/StructEst_W20/Projects/Data/prod_data_USD/wide_df_new.csv", colrange(1:76) clear /*load data for estimation*/
 rename ïdgp199 v1
 
 forvalues t = 1(1)17{
@@ -21,14 +20,14 @@ local i_y = 57 + `t'
 rename v`i_y' y`t'
 }
 
-gen id = _n /*generate firm id*/  //create 1 - n firm identifiers. assuming every obs is unique, create an identifier ( 1 - end )
+gen id = _n 
 save "Desktop/StructEst_W20/Projects/Data/prod_data_USD/prod_data_US.dta", replace 
 /*start estimation*/
 
 
 local dlwprogram = "Desktop/StructEst_W20/Projects/stata/acf_mata_original.do" // local means create a group of values. gen is creating a variable within a dataset
 
-do `dlwprogram' //run this. like sourcing code in R
+do `dlwprogram' //run this
 
 use "Desktop/StructEst_W20/Projects/Data/prod_data_USD/prod_data_US.dta", clear 
 reshape long k l m y, i(id) j(t) // data is initially wide (wide vs long) wide is m1: values for m1, but we want to make it vertical
@@ -62,10 +61,9 @@ local starting = 7 //recall ex. when alvin set this to 10
 gen initialConst = 0
 
 forvalues s = 7(1)`starting'{ // starts at 7 and goes to 7. if above, was 10, then starts at 7 and goes to 10.
-// gen initiall = 0.1*(`s'-1) // initial l = 0.1*(7-1) = 0.6
-// gen initialk = 0.1*(11-`s') // initial k = 0.4
-gen initiall = .66
-gen initialk = .33
+
+gen initiall = .6
+gen initialk = .4
 
 dlw /*start search*/ //i think this is using the dlw code source above
 
@@ -90,26 +88,17 @@ save "Desktop/StructEst_W20/Projects/stata/result_acf_replicate.dta", replace
 local loop = 2
 
 while `loop' < = 1{
-//this seems to just be putting all the values from the acf_replicate.xlsx file in cols
 import excel "Desktop/StructEst_W20/Projects/stata/acf_replicate.xlsx",sheet("dgp1_`loop'") clear //imports 3 values in columns A, B, C
-sort C //is this sorting C column?
+sort C 
 keep if _n == 1
-save "Desktop/StructEst_W20/Projects/stata/result_temp.dta", replace //isn't this jst replacing the result_temp.dta?
+save "Desktop/StructEst_W20/Projects/stata/result_temp.dta", replace 
 
-append using "Desktop/StructEst_W20/Projects/stata/result_acf_replicate.dta" //appending?
+append using "Desktop/StructEst_W20/Projects/stata/result_acf_replicate.dta" //append
 
 save "Desktop/StructEst_W20/Projects/stata/result_acf_replicate.dta", replace 
 
 local loop = `loop' + 1
 }
-
-// /*OLS PART*/
-// use "Desktop/IO_Pset_2/dgp1_simulation.dta", clear 
-// reshape long k l m y, i(id) j(t) // data is initially wide (wide vs long) wide is m1: values for m1, but we want to make it vertical
-// xtset id t
-
-// xi: reg y l m k /*robust to higher order polynomial, this is just an interaction thing (xi), so have reg y on interactions of l, m, k*/  
-
 
 
 
